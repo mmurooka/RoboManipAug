@@ -384,10 +384,7 @@ class CollectAugmentedDataBase(TeleopBase):
             if self.acceptable_region_idx == 0:
                 self.follow_demo_info["start_time_idx"] = 0
             else:
-                prev_acceptable_region = self.annotation_data["acceptable_region_list"][
-                    self.acceptable_region_idx - 1
-                ]
-                self.follow_demo_info["start_time_idx"] = prev_acceptable_region[
+                self.follow_demo_info["start_time_idx"] = acceptable_region[
                     convergence_key
                 ]["time_idx"]
             if self.acceptable_region_idx == len(
@@ -396,8 +393,21 @@ class CollectAugmentedDataBase(TeleopBase):
                 self.follow_demo_info["end_time_idx"] = (
                     len(self.base_data_manager.get_data_seq(DataKey.TIME)) - 1
                 )
+            elif (
+                self.acceptable_region_idx
+                == len(self.annotation_data["acceptable_region_list"]) - 1
+            ):
+                next_acceptable_region = self.annotation_data["acceptable_region_list"][
+                    self.acceptable_region_idx
+                ]
+                self.follow_demo_info["end_time_idx"] = next_acceptable_region[
+                    convergence_key
+                ]["time_idx"]
             else:
-                self.follow_demo_info["end_time_idx"] = acceptable_region[
+                next_acceptable_region = self.annotation_data["acceptable_region_list"][
+                    self.acceptable_region_idx + 1
+                ]
+                self.follow_demo_info["end_time_idx"] = next_acceptable_region[
                     convergence_key
                 ]["time_idx"]
             self.follow_demo_info["current_time_idx"] = self.follow_demo_info[
@@ -431,7 +441,7 @@ class CollectAugmentedDataBase(TeleopBase):
                 list(sample_pos_list) + [None]
             ):
                 # Move to convergence point
-                joint_pos = acceptable_region[convergence_key]["joint_pos"]
+                joint_pos = next_acceptable_region[convergence_key]["joint_pos"]
                 vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
 
                 gripper_joint_idxes = self.motion_manager.body_manager_list[
@@ -452,7 +462,7 @@ class CollectAugmentedDataBase(TeleopBase):
 
                 # Move to sampled point
                 if self.args.position_fix:
-                    sample_pos = acceptable_region[convergence_key]["eef_pose"][:3]
+                    sample_pos = next_acceptable_region[convergence_key]["eef_pose"][:3]
                 if self.args.rotation_random_angle is None:
                     max_angle = self.args.rotation_random_scale * radius
                 else:
@@ -464,7 +474,9 @@ class CollectAugmentedDataBase(TeleopBase):
                     eef_se3,
                     duration=self.args.interp_duration,
                 )
-                self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
+                self.aug_end_time_idx = next_acceptable_region[convergence_key][
+                    "time_idx"
+                ]
                 self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
                 self.executing_augmented_motion = False
