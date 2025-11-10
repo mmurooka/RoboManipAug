@@ -433,8 +433,12 @@ class CollectAugmentedDataBase(TeleopBase):
                 # Move to convergence point
                 center_time_idx = acceptable_region["center"]["time_idx"]
                 convergence_time_idx = acceptable_region["convergence"]["time_idx"]
-                new_convergence_time_idx = center_time_idx + int(
-                    2.0 * (convergence_time_idx - center_time_idx)
+                new_convergence_time_idx = np.min(
+                    [
+                        center_time_idx
+                        + int(2.0 * (convergence_time_idx - center_time_idx)),
+                        len(self.base_data_manager.all_data_seq[DataKey.TIME]) - 1,
+                    ]
                 )
                 joint_pos = self.base_data_manager.all_data_seq["command_joint_pos"][
                     new_convergence_time_idx
