@@ -431,7 +431,14 @@ class CollectAugmentedDataBase(TeleopBase):
                 list(sample_pos_list) + [None]
             ):
                 # Move to convergence point
-                joint_pos = acceptable_region[convergence_key]["joint_pos"]
+                center_time_idx = acceptable_region["center"]["time_idx"]
+                convergence_time_idx = acceptable_region["convergence"]["time_idx"]
+                new_convergence_time_idx = center_time_idx + int(
+                    2.0 * (convergence_time_idx - center_time_idx)
+                )
+                joint_pos = self.base_data_manager.all_data_seq["command_joint_pos"][
+                    new_convergence_time_idx
+                ]
                 vel_limit = np.full_like(joint_pos, np.deg2rad(20.0))  # [rad/s]
 
                 gripper_joint_idxes = self.motion_manager.body_manager_list[
@@ -464,7 +471,7 @@ class CollectAugmentedDataBase(TeleopBase):
                     eef_se3,
                     duration=self.args.interp_duration,
                 )
-                self.aug_end_time_idx = acceptable_region[convergence_key]["time_idx"]
+                self.aug_end_time_idx = new_convergence_time_idx
                 self.executing_augmented_motion = True
                 self.motion_interpolator.wait()
                 self.executing_augmented_motion = False
